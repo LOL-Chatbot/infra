@@ -54,6 +54,7 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
             BACKEND_IMAGE="$BACKEND_IMAGE" FASTAPI_IMAGE="$FASTAPI_IMAGE" docker compose pull
             BACKEND_IMAGE="$BACKEND_IMAGE" FASTAPI_IMAGE="$FASTAPI_IMAGE" GEMINI_API_KEY="$GEMINI_API_KEY" GEMINI_MODEL="$GEMINI_MODEL" docker compose up -d
+            docker compose exec -T nginx nginx -s reload
             docker image prune -f
             sleep 10
             curl -fsS http://localhost/actuator/health
