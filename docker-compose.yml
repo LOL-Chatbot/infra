@@ -1,0 +1,67 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: lol-chatbot-nginx
+    restart: unless-stopped
+    depends_on:
+      - spring-backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - lol-chatbot-network
+
+  spring-backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}
+    container_name: lol-chatbot-backend
+    restart: unless-stopped
+    depends_on:
+      - fastapi
+      - postgres
+    environment:
+      FASTAPI_BASE_URL: ${FASTAPI_BASE_URL:-http://fastapi:8000}
+      FASTAPI_TIMEOUT_MILLIS: ${FASTAPI_TIMEOUT_MILLIS:-30000}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    expose:
+      - "8080"
+    networks:
+      - lol-chatbot-network
+
+  fastapi:
+    image: ${FASTAPI_IMAGE:?FASTAPI_IMAGE is required}
+    container_name: lol-chatbot-fastapi
+    restart: unless-stopped
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_TEMPERATURE: ${GEMINI_TEMPERATURE:-0.1}
+      OPGG_MCP_DIR: /opt/opgg-mcp
+      DATA_DRAGON_VERSION: ${DATA_DRAGON_VERSION:-}
+      DATA_DRAGON_LANGUAGE: ${DATA_DRAGON_LANGUAGE:-ko_KR}
+    expose:
+      - "8000"
+    networks:
+      - lol-chatbot-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: lol-chatbot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lol_chatbot}
+      POSTGRES_USER: ${POSTGRES_USER:-lol_chatbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - lol-chatbot-network
+
+networks:
+  lol-chatbot-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
